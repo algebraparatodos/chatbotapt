@@ -4,7 +4,7 @@
   // ============================================================
   // CONFIGURACIÓN
   // ============================================================
-  const WORKER_URL = "https://apt-chatbot.agaparatodos.workers.dev";
+  const WORKER_URL = "https://chat.algebraparatodos.com";
 
   // Se oculta si "qr" o "yt" aparece en cualquier parte del path.
   const EXCLUDE_SUBSTRINGS = ["qr", "yt"];
