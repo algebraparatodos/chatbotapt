@@ -471,8 +471,13 @@
     toggle.classList.add("hidden");
     if (!opened) {
       opened = true;
+      // Juani da UNA sola materia: Álgebra Lineal. El saludo nombraba también
+      // Análisis Matemático I, que no da: es lo primero que lee todo el que
+      // abre la burbuja, y después Mateo lo desmiente — su base de
+      // conocimiento sí lo tiene bien. No volver a sumar materias acá: lo que
+      // se ofrece se dice en el repo de conocimiento, no en este saludo.
       addMessage(
-        "¡Hola! Soy Mateo, el asistente de Juani Silva de Álgebra Para Todos. Puedo ayudarte con dudas sobre el libro, las clases grupales de Álgebra Lineal y Análisis Matemático I, o los recursos gratuitos. ¿Cómo te llamás?",
+        "¡Hola! Soy Mateo, el asistente de Juani Silva de Álgebra Para Todos. Puedo ayudarte con dudas sobre el libro, las clases grupales de Álgebra Lineal, o los recursos gratuitos. ¿Cómo te llamás?",
         "bot"
       );
     }
