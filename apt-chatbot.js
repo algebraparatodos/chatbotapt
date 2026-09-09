@@ -21,6 +21,50 @@
   const HISTORY_TTL_MS = 24 * 60 * 60 * 1000; // 1 día
   const HISTORY_MAX = 40; // tope para no dejar crecer el localStorage sin límite
 
+  // ============================================================
+  // QUIÉN ESTÁ DEL OTRO LADO
+  //
+  // Desde el 09/09/2026 la burbuja pide el nombre y el correo antes del
+  // primer mensaje. El motivo, medido ese día sobre las charlas reales
+  // de los tres bots vivos de la casa: 80 sesiones, 169 mensajes y CERO
+  // contactos guardados. Pedirlo en mitad de la conversación depende de
+  // que el modelo se acuerde; un formulario captura siempre.
+  //
+  // Se guarda también a quien pulsó "prefiero no dejarlo ahora", y por
+  // el mismo motivo que a quien sí lo dejó: para no volver a
+  // preguntárselo cada vez que abre la burbuja. Un formulario que
+  // reaparece después de que alguien lo rechazó es la forma más rápida
+  // de que cierre la ventana.
+  const PERSONA_KEY = "apt_chat_persona";
+
+  function leerPersona() {
+    try {
+      const crudo = localStorage.getItem(PERSONA_KEY);
+      return crudo ? JSON.parse(crudo) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function guardarPersona(persona) {
+    try {
+      localStorage.setItem(PERSONA_KEY, JSON.stringify(persona));
+    } catch (e) {
+      // Sin almacenamiento se le vuelve a preguntar en la próxima
+      // visita. Molesta, pero no rompe nada.
+    }
+  }
+
+  // Deliberadamente flojo: esto no valida direcciones, sólo descarta lo
+  // que es evidente que no lo es. Una comprobación estricta rechaza
+  // direcciones válidas y raras, y el precio de equivocarse es perder
+  // justo al contacto que veníamos a capturar. El Worker comprueba lo
+  // mismo.
+  function pareceEmail(valor) {
+    const v = String(valor || "").trim();
+    return v.length >= 6 && v.length <= 200 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  }
+
   function clearExpiredSessionIfNeeded() {
     try {
       const lastActivity = localStorage.getItem(ACTIVITY_KEY);
@@ -28,6 +72,10 @@
         localStorage.removeItem(SESSION_KEY);
         localStorage.removeItem(HISTORY_KEY);
         localStorage.removeItem(ACTIVITY_KEY);
+        // La persona NO se borra a propósito: la charla vence a las 24
+        // horas, pero quién es no cambia. Borrarla haría que a la
+        // segunda visita se le pidiera el correo otra vez, que es justo
+        // lo que molesta de estos formularios.
       }
     } catch (e) {
       // Si localStorage no está disponible, no hay nada que limpiar.
@@ -240,6 +288,94 @@
     }
     .apt-msg a { color: inherit; text-decoration: underline; }
 
+    /* La pantalla de presentación: lo primero que se ve al abrir. */
+    #apt-chat-presentacion {
+      display: none;
+      flex-direction: column;
+      padding: 22px 20px;
+      overflow-y: auto;
+      flex: 1;
+      background: #FFFFFF;
+      color: #000000;
+      font-family: 'Arvo', serif;
+    }
+    #apt-chat-presentacion.visible { display: flex; }
+    #apt-chat-presentacion p.intro {
+      margin: 0 0 18px;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    #apt-chat-presentacion label {
+      display: block;
+      font-size: 13px;
+      color: #555555;
+      margin-bottom: 12px;
+    }
+    #apt-chat-presentacion input {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 5px;
+      padding: 10px 16px;
+      /* 16px como mínimo: con menos, Safari en iPhone hace zoom solo al
+         tocar el campo y descuadra la página entera. */
+      font-size: 16px;
+      font-family: 'Arvo', serif;
+      color: #000000;
+      background: #FFFFFF;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 20px;
+      outline: none;
+    }
+    #apt-chat-presentacion input:focus { border-color: #48507D; }
+    #apt-chat-empezar {
+      width: 100%;
+      margin-top: 6px;
+      padding: 12px 16px;
+      font-family: 'Arvo', serif;
+      font-size: 15px;
+      color: #FFFFFF;
+      background: #48507D;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    #apt-chat-empezar[disabled] { opacity: 0.4; cursor: default; }
+    #apt-chat-empezar .girando {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      margin-right: 7px;
+      vertical-align: -2px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: apt-girar 0.7s linear infinite;
+    }
+    @keyframes apt-girar { to { transform: rotate(360deg); } }
+    #apt-chat-presentacion .pista {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #555555;
+      text-align: center;
+    }
+    #apt-chat-saltar {
+      margin-top: 18px;
+      background: none;
+      border: none;
+      font-family: 'Arvo', serif;
+      font-size: 12px;
+      color: #555555;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    #apt-chat-presentacion .legal {
+      margin: 22px 0 0;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #555555;
+    }
+
     #apt-chat-inputbar {
       display: flex;
       gap: 8px;
@@ -336,6 +472,19 @@
         <button id="apt-chat-close" aria-label="Cerrar chat">×</button>
       </div>
     </div>
+    <div id="apt-chat-presentacion">
+      <p class="intro">Antes de empezar, decime cómo te llamás y tu correo. Si veo que no puedo ayudarte, te va a contactar alguien del equipo lo antes posible.</p>
+      <label>Nombre
+        <input id="apt-chat-nombre" type="text" autocomplete="given-name" maxlength="120" aria-label="Nombre" placeholder="Cómo te llamás" />
+      </label>
+      <label>Correo
+        <input id="apt-chat-email" type="email" inputmode="email" autocomplete="email" maxlength="200" aria-label="Correo" placeholder="tu@correo.com" />
+      </label>
+      <button id="apt-chat-empezar" type="button" disabled>Empezar a chatear</button>
+      <p class="pista" id="apt-chat-pista">Escribí tu nombre y un correo para empezar.</p>
+      <button id="apt-chat-saltar" type="button">Prefiero no dejarlo ahora</button>
+      <p class="legal">Los datos son para que Juani pueda escribirte.</p>
+    </div>
     <div id="apt-chat-messages"></div>
     <div id="apt-chat-inputbar">
       <input id="apt-chat-input" type="text" placeholder="Escribí tu consulta..." autocomplete="off" />
@@ -348,6 +497,13 @@
   document.body.appendChild(toggle);
   document.body.appendChild(panel);
 
+  const presentacionEl = panel.querySelector("#apt-chat-presentacion");
+  const inputbarEl = panel.querySelector("#apt-chat-inputbar");
+  const nombreEl = panel.querySelector("#apt-chat-nombre");
+  const emailEl = panel.querySelector("#apt-chat-email");
+  const empezarBtn = panel.querySelector("#apt-chat-empezar");
+  const pistaEl = panel.querySelector("#apt-chat-pista");
+  const saltarBtn = panel.querySelector("#apt-chat-saltar");
   const messagesEl = panel.querySelector("#apt-chat-messages");
   const inputEl = panel.querySelector("#apt-chat-input");
   const sendBtn = panel.querySelector("#apt-chat-send");
@@ -465,24 +621,146 @@
     });
   }
 
+  // Juani da UNA sola materia: Álgebra Lineal. El saludo nombraba también
+  // Análisis Matemático I, que no da: es lo primero que lee todo el que
+  // abre la burbuja, y después Mateo lo desmiente — su base de
+  // conocimiento sí lo tiene bien. No volver a sumar materias acá: lo que
+  // se ofrece se dice en el repo de conocimiento, no en este saludo.
+  //
+  // El "¿cómo te llamás?" del final sólo va cuando de verdad no lo
+  // sabemos. Desde que existe el formulario de apertura, preguntárselo a
+  // alguien que acaba de escribir su nombre dos renglones más arriba
+  // hace quedar al bot como si no leyera.
+  function saludo(persona) {
+    const base =
+      "¡Hola! Soy Mateo, el asistente de Juani Silva de Álgebra Para Todos. Puedo ayudarte " +
+      "con dudas sobre el libro, las clases grupales de Álgebra Lineal, o los recursos gratuitos.";
+
+    if (persona && persona.nombre) {
+      return `¡Hola, ${persona.nombre}! Soy Mateo, el asistente de Juani Silva de Álgebra Para ` +
+        "Todos. Puedo ayudarte con dudas sobre el libro, las clases grupales de Álgebra Lineal, " +
+        "o los recursos gratuitos. ¿Qué querés saber?";
+    }
+
+    return base + " ¿Cómo te llamás?";
+  }
+
+  // El estado de la puerta de entrada. `null` mientras no sepamos quién
+  // es: ahí se ve el formulario en lugar de la conversación.
+  let persona = leerPersona();
+  let presentando = false;
+
+  // Quien ya tenía una charla empezada sigue como estaba. El día que
+  // esto se despliega hay gente con una conversación guardada y sin
+  // datos, porque cuando la empezó el formulario no existía: plantárselo
+  // encima de lo que estaba hablando sería la peor forma de estrenarlo.
+  // Se marca sólo en el navegador, sin avisarle al Worker, para que no
+  // cuente como "prefirió no dejarlo" y ensucie la medición.
+  if (persona === null && conversationHistory.length > 0) {
+    persona = { enCurso: true };
+  }
+
+  function mostrarPresentacion(hayQuePresentarse) {
+    presentacionEl.classList.toggle("visible", hayQuePresentarse);
+    messagesEl.style.display = hayQuePresentarse ? "none" : "";
+    inputbarEl.style.display = hayQuePresentarse ? "none" : "";
+  }
+
+  function revisarFormulario() {
+    const listo = nombreEl.value.trim() !== "" && pareceEmail(emailEl.value);
+    // El botón no se puede pulsar hasta que se pueda usar, y la pista
+    // dice por qué antes de pulsarlo en vez de explicarlo después.
+    empezarBtn.disabled = !listo || presentando;
+    pistaEl.style.display = listo ? "none" : "";
+    return listo;
+  }
+
+  nombreEl.addEventListener("input", revisarFormulario);
+  emailEl.addEventListener("input", revisarFormulario);
+  nombreEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") emailEl.focus();
+  });
+  emailEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && revisarFormulario()) presentarse();
+  });
+  empezarBtn.addEventListener("click", function () {
+    if (revisarFormulario()) presentarse();
+  });
+  saltarBtn.addEventListener("click", function () {
+    presentarse({ saltada: true });
+  });
+
+  /**
+   * Guarda quién abrió el chat, o que prefirió no decirlo.
+   *
+   * Pase lo que pase se entra al chat. El Worker ya está escrito para no
+   * fallar nunca acá, pero si la red se cae del todo esta persona tiene
+   * que poder preguntar igual: un formulario de captación que deja a
+   * alguien mirando una burbuja rota cuesta más que el contacto que
+   * venía a capturar.
+   */
+  async function presentarse(saltar) {
+    if (presentando) return;
+    presentando = true;
+
+    const saltada = !!(saltar && saltar.saltada);
+    const datos = saltada
+      ? { session_id: sessionId, saltada: true }
+      : {
+          session_id: sessionId,
+          nombre: nombreEl.value.trim(),
+          email: emailEl.value.trim(),
+        };
+
+    if (!saltada) {
+      empezarBtn.disabled = true;
+      empezarBtn.innerHTML = '<span class="girando"></span>Un momento...';
+    }
+    saltarBtn.disabled = true;
+
+    try {
+      await fetch(WORKER_URL + "/presentacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
+      });
+    } catch (e) {
+      // Silencio a propósito: el contacto se pierde, la conversación no.
+    }
+
+    presentando = false;
+    empezarBtn.textContent = "Empezar a chatear";
+    saltarBtn.disabled = false;
+
+    persona = saltada ? { saltada: true } : { nombre: datos.nombre, email: datos.email };
+    guardarPersona(persona);
+
+    mostrarPresentacion(false);
+    if (!opened) {
+      opened = true;
+      addMessage(saludo(persona), "bot");
+    }
+    if (!isTouchDevice) inputEl.focus();
+  }
+
   function openPanel() {
     updateHeaderOffset();
     panel.classList.add("open");
     toggle.classList.add("hidden");
-    if (!opened) {
+
+    // Mientras no sepamos quién es, lo que se ve es el formulario y no
+    // la conversación: es el único momento en que se puede pedir el
+    // correo antes de que la persona se vaya.
+    const hayQuePresentarse = persona === null;
+    mostrarPresentacion(hayQuePresentarse);
+
+    if (!hayQuePresentarse && !opened) {
       opened = true;
-      // Juani da UNA sola materia: Álgebra Lineal. El saludo nombraba también
-      // Análisis Matemático I, que no da: es lo primero que lee todo el que
-      // abre la burbuja, y después Mateo lo desmiente — su base de
-      // conocimiento sí lo tiene bien. No volver a sumar materias acá: lo que
-      // se ofrece se dice en el repo de conocimiento, no en este saludo.
-      addMessage(
-        "¡Hola! Soy Mateo, el asistente de Juani Silva de Álgebra Para Todos. Puedo ayudarte con dudas sobre el libro, las clases grupales de Álgebra Lineal, o los recursos gratuitos. ¿Cómo te llamás?",
-        "bot"
-      );
+      addMessage(saludo(persona), "bot");
     }
+
     if (!isTouchDevice) {
-      inputEl.focus();
+      (hayQuePresentarse ? nombreEl : inputEl).focus();
     }
   }
 
