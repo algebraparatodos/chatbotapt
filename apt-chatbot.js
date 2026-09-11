@@ -2,6 +2,32 @@
   "use strict";
 
   // ============================================================
+  // MATEO ESTA APAGADO
+  //
+  // Apagado el 12/09/2026 a pedido de Juani, mirando la factura de
+  // Anthropic. El motivo, medido ese dia: en los doce dias anteriores
+  // Mateo atendio a TRES personas y recibio 192 preguntas del vigia que
+  // comprueba cada tres horas que los bots siguen vivos. O sea que casi
+  // todo lo que gastaba era el robot, no la gente.
+  //
+  // Se apaga aca, en la burbuja, y no quitando <Mateo /> del layout de la
+  // web, porque ese repo tenia doce archivos a medias de otra sesion y
+  // desplegarlo se habria llevado por delante trabajo ajeno.
+  //
+  // PARA VOLVER A ENCENDERLO hacen falta las dos cosas, no una:
+  //   1. Poner APAGADO en false aca y purgar jsDelivr, que cachea este
+  //      archivo unas horas.
+  //   2. Devolverle el dominio chat.algebraparatodos.com al Worker
+  //      apt-chatbot, que se le quito el mismo dia. Sin eso la burbuja
+  //      aparece pero no tiene con quien hablar.
+  //
+  // El Worker, su base de conversaciones y los contactos que capto siguen
+  // enteros: esto no borra nada.
+  // ============================================================
+  const APAGADO = true;
+  if (APAGADO) return;
+
+  // ============================================================
   // CONFIGURACIÓN
   // ============================================================
   const WORKER_URL = "https://chat.algebraparatodos.com";
