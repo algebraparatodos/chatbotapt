@@ -2,29 +2,31 @@
   "use strict";
 
   // ============================================================
-  // MATEO ESTA APAGADO
+  // EL INTERRUPTOR DE MATEO
   //
-  // Apagado el 12/09/2026 a pedido de Juani, mirando la factura de
-  // Anthropic. El motivo, medido ese dia: en los doce dias anteriores
-  // Mateo atendio a TRES personas y recibio 192 preguntas del vigia que
-  // comprueba cada tres horas que los bots siguen vivos. O sea que casi
-  // todo lo que gastaba era el robot, no la gente.
+  // Poner APAGADO en true hace que la burbuja no se dibuje en ninguna
+  // pagina de la web, sin tener que desplegar algebraparatodos.com.
   //
-  // Se apaga aca, en la burbuja, y no quitando <Mateo /> del layout de la
-  // web, porque ese repo tenia doce archivos a medias de otra sesion y
-  // desplegarlo se habria llevado por delante trabajo ajeno.
+  // Se uso de verdad el 12/09/2026. Juani apago a Mateo mirando la factura
+  // de Anthropic, porque en los doce dias anteriores habia atendido a TRES
+  // personas y recibido 192 preguntas del vigia que comprueba cada rato que
+  // los bots siguen vivos. Ese mismo dia lo volvio a encender, una vez que
+  // el vigia dejo de ser caro (paso de mirar ocho veces al dia a una vez
+  // cada dos dias, de 33,94 dolares al mes a menos de dos).
   //
-  // PARA VOLVER A ENCENDERLO hacen falta las dos cosas, no una:
-  //   1. Poner APAGADO en false aca y purgar jsDelivr, que cachea este
-  //      archivo unas horas.
-  //   2. Devolverle el dominio chat.algebraparatodos.com al Worker
-  //      apt-chatbot, que se le quito el mismo dia. Sin eso la burbuja
-  //      aparece pero no tiene con quien hablar.
+  // Se apago desde aca y no quitando <Mateo /> del layout de la web porque
+  // ese repo tenia archivos a medias de otra sesion y desplegarlo se habria
+  // llevado por delante trabajo ajeno. Es la gracia de tener el interruptor
+  // aca: apaga y enciende sin tocar la web.
   //
-  // El Worker, su base de conversaciones y los contactos que capto siguen
-  // enteros: esto no borra nada.
+  // OJO, son DOS cosas y las dos hacen falta. Esto solo esconde la burbuja.
+  // Quien de verdad corta el gasto es el dominio chat.algebraparatodos.com
+  // del Worker apt-chatbot, porque mientras exista el vigia lo encuentra y
+  // sigue pagando por sondearlo. Y ojo tambien con que jsDelivr cachea este
+  // archivo unas horas: despues de cambiar la linea hay que purgarlo en
+  // https://purge.jsdelivr.net/gh/algebraparatodos/chatbotapt@main/apt-chatbot.js
   // ============================================================
-  const APAGADO = true;
+  const APAGADO = false;
   if (APAGADO) return;
 
   // ============================================================
