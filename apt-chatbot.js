@@ -605,35 +605,62 @@
   );
 
   // ============================================================
-  // Escapado de HTML + linkify (nunca innerHTML directo con texto
-  // sin escapar primero)
+  // El texto de un mensaje, con sus enlaces
+  //
+  // Se arma con nodos y nunca con innerHTML. Hasta el 25/10/2026 se
+  // escapaba con textContent -> innerHTML, que no escapa las comillas, y
+  // la direccion se pegaba dentro de href="...": una direccion con una
+  // comilla en el medio -que puede escribir quien chatea, o hacerle
+  // escribir al modelo- cerraba el atributo y metia los suyos en la
+  // pagina. Con createElement y textContent el navegador no interpreta
+  // nada de lo que llega.
+  //
+  // Solo se enlaza https:. Un http: (o cualquier otra cosa) se ve como
+  // texto, igual que el resto del mensaje.
   // ============================================================
-  function escapeHTML(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+  function enlaceSeguro(url) {
+    try {
+      return new URL(url).protocol === "https:";
+    } catch (e) {
+      return false;
+    }
   }
 
-  function linkify(text) {
-    const urlRegex = /(https?:\/\/[^\s<]+)/g;
-    return text.replace(urlRegex, function (url) {
-      let clean = url;
+  function pintarTexto(contenedor, text) {
+    const texto = String(text == null ? "" : text);
+    const urlRegex = /https?:\/\/[^\s<>"]+/g;
+    let desde = 0;
+    let m;
+    while ((m = urlRegex.exec(texto)) !== null) {
+      // No incluir la puntuacion final (. , ; : ! ? ) ) como parte del enlace.
+      let clean = m[0];
       let trailing = "";
-      const m = clean.match(/[.,;:!?)]+$/);
-      if (m) {
-        trailing = m[0];
+      const fin = clean.match(/[.,;:!?)]+$/);
+      if (fin) {
+        trailing = fin[0];
         clean = clean.slice(0, -trailing.length);
       }
-      return (
-        '<a href="' + clean + '" target="_blank" rel="noopener noreferrer">' + clean + "</a>" + trailing
-      );
-    });
+      contenedor.appendChild(document.createTextNode(texto.slice(desde, m.index)));
+      if (clean && enlaceSeguro(clean)) {
+        const a = document.createElement("a");
+        a.href = clean;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = clean;
+        contenedor.appendChild(a);
+        contenedor.appendChild(document.createTextNode(trailing));
+      } else {
+        contenedor.appendChild(document.createTextNode(m[0]));
+      }
+      desde = m.index + m[0].length;
+    }
+    contenedor.appendChild(document.createTextNode(texto.slice(desde)));
   }
 
   function addMessage(text, who) {
     const div = document.createElement("div");
     div.className = "apt-msg " + who;
-    div.innerHTML = linkify(escapeHTML(text));
+    pintarTexto(div, text);
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return div;
